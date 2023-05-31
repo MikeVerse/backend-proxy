@@ -2,7 +2,7 @@ import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
 export const getClient = async () => {
     const cosmwasmClient = await CosmWasmClient.connect(
-        'https://sei-testnet-rpc.orbitalcommand.io/',
+        'https://sei.kingnodes.com',
     );
 
     return cosmwasmClient;
