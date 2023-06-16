@@ -1,2 +1,1 @@
-export const rpcEndpoint = 'https://sei-testnet-rpc.orbitalcommand.io/';
-
+export const rpcEndpoint = 'https://sei.kingnodes.com/';

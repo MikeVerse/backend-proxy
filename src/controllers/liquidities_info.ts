@@ -130,7 +130,7 @@ const fetchLiquiditiesInfo = async () => {
 
                 const tokenReserve =
                     liquidities[liquidityIndex][
-                        configObject.rewardToken === TokenType.FUZIO
+                        configObject.rewardToken === TokenType.ZIO
                             ? 'token1Reserve'
                             : 'token2Reserve'
                     ];
