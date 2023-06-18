@@ -22,7 +22,9 @@ export const Liquidities: TLiquidity[] = [
         tokenB: TokenType.SEN,
         contractAddress:
             'sei1kljwpmgtkuw4dxk2e7kzqvspz2wtcsp3ug9x9cqfzpw3sxf3utrqlgenqw',
-        stakingAddress: [],
+        stakingAddress: [
+            'sei15sz9muf4a3tgs2pyhtc223rskg76p6zkuzf862dgcp8crugxekcqsk7aph',
+        ],
         isVerified: true,
     },
     {
@@ -39,6 +41,6 @@ export const Liquidities: TLiquidity[] = [
         contractAddress:
             'sei1f5c4j8ygkyfxch4kve0m40jsmhulp3w2vs7shv6ud8w3rwwwnf9q7c4pyz',
         stakingAddress: [],
-        isVerified: true,
+        isVerified: false,
     },
 ];
