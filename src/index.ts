@@ -3,10 +3,16 @@ import { Elysia } from "elysia"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { swagger } from "@elysiajs/swagger"
 import { getPoolInfo } from "./query/getPoolInfo"
+import { cors } from "@elysiajs/cors"
 
 const client = await CosmWasmClient.connect("https://sei.kingnodes.com")
 
 const app = new Elysia()
+	.use(
+		cors({
+			origin: true
+		})
+	)
 	.get(
 		"/",
 		() => `
