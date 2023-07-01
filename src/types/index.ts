@@ -34,9 +34,14 @@ export type Chain = {
 	evmChainId?: number
 }
 
-export type BondingPeriod = {
+export type Reward = {
 	apr: number
 	rewardToken: Denom
+}
+
+export type BondingPeriod = {
+	address: string
+	rewards: Array<Reward>
 	lockDuration: number
 	distributionEnd: number
 	distributionStart: number
@@ -54,7 +59,7 @@ export type LiquidityToken = {
 }
 
 export type Liquidity = {
-	usd: number
+	usd: Decimal
 	token1: LiquidityToken
 	token2: LiquidityToken
 }

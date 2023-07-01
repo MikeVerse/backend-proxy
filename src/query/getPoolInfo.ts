@@ -33,8 +33,8 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 
 	const poolInfos = await Promise.all(poolQueries)
 
-	const fuzioPrice = new Decimal(poolInfos[2].token2_reserve).dividedBy(
-		new Decimal(poolInfos[2].token1_reserve)
+	const fuzioPrice = new Decimal(poolInfos[1].token2_reserve).dividedBy(
+		new Decimal(poolInfos[1].token1_reserve)
 	)
 
 	const poolsWithData: Array<Pool> = []
@@ -92,71 +92,57 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 			decimalDiff
 		)
 
-		for await (const bondingPeriod of poolList[index].bondingPeriods) {
-			const bondingPeriodString = bondingPeriod as unknown as string
-			const stakingQueryClient = new FuzioStakingQueryClient(client, bondingPeriodString)
-			const lpQueryClient = new FuzioPoolQueryClient(client, poolInfo.lp_token_address)
+		const bondingPeriods: Array<BondingPeriod> = []
+		const lpQueryClient = new FuzioPoolQueryClient(client, poolInfo.lp_token_address)
 
+		for await (const bondingPeriod of poolList[index].bondingPeriods) {
+			const stakingQueryClient = new FuzioStakingQueryClient(client, bondingPeriod.address)
+			const config = await stakingQueryClient.config()
 			const totalStakedBalance = await lpQueryClient.balance({
-				address: bondingPeriodString
+				address: bondingPeriod.address
 			})
 
-			console.log(totalStakedBalance)
+			let bondingPeriodToReturn: BondingPeriod = {
+				address: bondingPeriod.address,
+				distributionStart: 0,
+				rewards: [], // { apr: 0, rewardToken: { native: "" } }
+				lockDuration: config.lock_duration,
+				distributionEnd: 0
+			}
 
-			// const config = await stakingQueryClient.config()
+			for (const [_index, schedule] of config.distribution_schedule.entries()) {
+				let totalTokenReward = Number(schedule.amount)
+				totalTokenReward = isNaN(totalTokenReward) ? 0 : totalTokenReward
 
-			// let bondingPeriodOld: BondingPeriod = {
-			// 	apr: 0,
-			// 	distributionStart: 0,
-			// 	rewardToken: { native: "" },
-			// 	lockDuration: config.lock_duration,
-			// 	distributionEnd: 0
-			// }
+				const tokenReserve = poolInfo["token1_reserve"]
 
-			// const bondingPeriod = config.distribution_schedule.map((distributions, index) => {
-			// 	for (const [_index, distribution] of distributions.entries()) {
-			// 		if (bondingPeriodOld.distributionStart === 0) {
-			// 			// @ts-ignore
-			// 			let totalTokenReward = Number(distribution.amount as string)
-			// 			totalTokenReward = isNaN(totalTokenReward) ? 0 : totalTokenReward
+				const totalLPBalance = Number(poolInfo.lp_token_supply) * 1e6
 
-			// 			// console.log(totalTokenReward)
-			// 			// console.log(config.reward_token[_index])
+				const apr = Number(totalStakedBalance.balance)
+					? (100 * totalTokenReward) /
+					  ((2 * Number(tokenReserve) * Number(totalStakedBalance.balance)) / totalLPBalance)
+					: 0
 
-			// 			bondingPeriodOld = {
-			// 				apr: 0,
-			// 				rewardToken: config.reward_token[index],
-			// 				// @ts-ignore
-			// 				distributionStart: distribution.start_time,
-			// 				// @ts-ignore
-			// 				distributionEnd: distribution.end_time,
-			// 				lockDuration: config.lock_duration
-			// 			}
-			// 		} else {
-			// 			// @ts-ignore
-			// 			let totalTokenReward = Number(distribution.amount as string)
-			// 			totalTokenReward = isNaN(totalTokenReward) ? 0 : totalTokenReward
+				console.log(100 * totalTokenReward)
+				console.log(2 * Number(tokenReserve) * Number(totalStakedBalance.balance))
 
-			// 			// console.log(totalTokenReward)
-			// 			// console.log(config.reward_token[_index])
+				bondingPeriodToReturn.rewards.push({ apr, rewardToken: config.reward_token[_index] })
 
-			// 			// const tokenReserve =
-			// 			// 	poolInfo[index][
-			// 			// 		config.rewardToken === TokenType.ZIO
-			// 			// 			? "token1Reserve"
-			// 			// 			: "token2Reserve"
-			// 			// 	]
+				if (
+					schedule.start_time < bondingPeriodToReturn.distributionStart ||
+					bondingPeriodToReturn.distributionStart === 0
+				) {
+					bondingPeriodToReturn.distributionStart = schedule.start_time
+				}
 
-			// 			const totalLPBalance = Number(poolInfo.token1_reserve) * 1e6
+				if (schedule.end_time > bondingPeriodToReturn.distributionEnd) {
+					bondingPeriodToReturn.distributionEnd = schedule.end_time
+				}
 
-			// 			bondingPeriodOld = { ...bondingPeriodOld }
-			// 		}
-			// 	}
+				console.log(totalStakedBalance.balance, totalTokenReward, totalLPBalance, tokenReserve)
+			}
 
-			// 	return bondingPeriodOld
-			// })
-
-			// const test2: BondingPeriodSummary = { aprArray: [], bondingPeriods: bondingPeriod }
+			bondingPeriods.push(bondingPeriodToReturn)
 		}
 
 		const poolWithData: Pool = {
@@ -172,14 +158,16 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 					tokenPrice: token2Price,
 					denom: token2.denom
 				},
-				usd: 0
+				usd: convertMicroDenomToDenom(poolInfo.token1_reserve, 6)
+					.times(token1Price)
+					.add(convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(token2Price))
 			},
 			lpTokenAddress: poolInfo.lp_token_address,
 			swapAddress: poolList[index].swapAddress,
 			isVerified: poolList[index].isVerified,
 			poolId: index + 1,
 			ratio: token2ReserveDenom.dividedBy(token1ReserveDenom),
-			bondingPeriods: poolList[index].bondingPeriods
+			bondingPeriods
 		}
 
 		poolsWithData.push(poolWithData)

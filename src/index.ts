@@ -49,7 +49,7 @@ const app = new Elysia()
 			}
 		})
 	)
-	.listen(3000)
+	.listen(process.env.BUNPORT ?? 3000)
 
 console.log(`🦎 Fuzio Dex Backend started at ${app.server?.hostname}:${app.server?.port}`)
 console.log(`
