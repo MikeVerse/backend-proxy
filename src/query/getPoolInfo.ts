@@ -3,6 +3,7 @@ import { convertDenomToMicroDenom, convertMicroDenomToDenom } from "../utils/hel
 import { BondingPeriod, Pool, Token } from "../types"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
+import { Denom } from "@fuzio/contracts/types/FuzioStaking.types"
 
 export const getPoolInfo = async (client: CosmWasmClient) => {
 	const poolListResponse = await fetch(
@@ -93,7 +94,10 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 		const bondingPeriods: Array<BondingPeriod> = []
 		const lpQueryClient = new FuzioPoolQueryClient(client, poolInfo.lp_token_address)
 
-		let highestApr = 0
+		let highestApr: { highestAprValue: number; highestAprToken: Denom | undefined } = {
+			highestAprValue: 0,
+			highestAprToken: undefined
+		}
 
 		for await (const bondingPeriod of poolList[index].bondingPeriods) {
 			const stakingQueryClient = new FuzioStakingQueryClient(client, bondingPeriod.address)
@@ -110,7 +114,7 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 				distributionEnd: 0
 			}
 
-			highestApr = 0
+			highestApr = { highestAprValue: 0, highestAprToken: undefined }
 
 			for (const [_index, schedule] of config.distribution_schedule.entries()) {
 				let totalTokenReward = Number(schedule.amount)
@@ -125,8 +129,9 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 					  ((2 * Number(tokenReserve) * Number(totalStakedBalance.balance)) / totalLPBalance)
 					: 0
 
-				if (apr > highestApr) {
-					highestApr = apr
+				if (apr > highestApr.highestAprValue) {
+					highestApr.highestAprValue = apr
+					highestApr.highestAprToken = config.reward_token[_index]
 				}
 
 				bondingPeriodToReturn.rewards.push({ apr, rewardToken: config.reward_token[_index] })
@@ -185,8 +190,8 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 			highestLiquidity = pool.liquidity.usd
 		}
 
-		if (highestApr.lessThan(pool.highestApr)) {
-			highestApr = new Decimal(pool.highestApr)
+		if (highestApr.lessThan(pool.highestApr.highestAprValue)) {
+			highestApr = new Decimal(pool.highestApr.highestAprValue)
 			highestAprPoolId = pool.poolId
 		}
 	}

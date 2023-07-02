@@ -65,7 +65,7 @@ export type Liquidity = {
 }
 
 export type Pool = {
-	highestApr: number
+	highestApr: { highestAprValue: number; highestAprToken: Denom | undefined }
 	bondingPeriods: Array<BondingPeriod>
 	poolId: number
 	swapAddress: string
