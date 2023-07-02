@@ -1,12 +1,12 @@
 import { Decimal } from "decimal.js"
 import { convertDenomToMicroDenom, convertMicroDenomToDenom } from "../utils/helpers"
-import { BondingPeriod, BondingPeriodSummary, Pool, Token } from "../types"
+import { BondingPeriod, Pool, Token } from "../types"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
 
 export const getPoolInfo = async (client: CosmWasmClient) => {
 	const poolListResponse = await fetch(
-		"https://raw.githubusercontent.com/fuzio-defi-network/fuzio-assetlist/main/poolList.json"
+		"https://raw.githubusercontent.com/Fuzio-DeFi-Network/fuzio-assetlist/main/poolList.json"
 	)
 	const poolListJson: any = await poolListResponse.json()
 	const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
@@ -72,8 +72,6 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 			convertDenomToMicroDenom(10, token1.decimal)
 		)
 
-		console.log(index + 1, token2ReserveDenom.dividedBy(token1ReserveDenom).toFixed(24))
-
 		const decimalDiff = token2.decimal - token1.decimal
 
 		const token1Price =
@@ -95,6 +93,8 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 		const bondingPeriods: Array<BondingPeriod> = []
 		const lpQueryClient = new FuzioPoolQueryClient(client, poolInfo.lp_token_address)
 
+		let highestApr = 0
+
 		for await (const bondingPeriod of poolList[index].bondingPeriods) {
 			const stakingQueryClient = new FuzioStakingQueryClient(client, bondingPeriod.address)
 			const config = await stakingQueryClient.config()
@@ -110,6 +110,8 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 				distributionEnd: 0
 			}
 
+			highestApr = 0
+
 			for (const [_index, schedule] of config.distribution_schedule.entries()) {
 				let totalTokenReward = Number(schedule.amount)
 				totalTokenReward = isNaN(totalTokenReward) ? 0 : totalTokenReward
@@ -123,8 +125,9 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 					  ((2 * Number(tokenReserve) * Number(totalStakedBalance.balance)) / totalLPBalance)
 					: 0
 
-				console.log(100 * totalTokenReward)
-				console.log(2 * Number(tokenReserve) * Number(totalStakedBalance.balance))
+				if (apr > highestApr) {
+					highestApr = apr
+				}
 
 				bondingPeriodToReturn.rewards.push({ apr, rewardToken: config.reward_token[_index] })
 
@@ -138,14 +141,13 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 				if (schedule.end_time > bondingPeriodToReturn.distributionEnd) {
 					bondingPeriodToReturn.distributionEnd = schedule.end_time
 				}
-
-				console.log(totalStakedBalance.balance, totalTokenReward, totalLPBalance, tokenReserve)
 			}
 
 			bondingPeriods.push(bondingPeriodToReturn)
 		}
 
 		const poolWithData: Pool = {
+			highestApr,
 			lpTokens: convertMicroDenomToDenom(poolInfo.lp_token_supply, 6),
 			liquidity: {
 				token1: {
@@ -173,5 +175,25 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 		poolsWithData.push(poolWithData)
 	}
 
-	return { pools: poolsWithData }
+	let highestAprPoolId = 0
+	let highestApr = new Decimal(0)
+	let highestLiquidityPoolId = 0
+	let highestLiquidity = new Decimal(0)
+	for (const pool of poolsWithData) {
+		if (pool.liquidity.usd.greaterThan(highestLiquidity)) {
+			highestLiquidityPoolId = pool.poolId
+			highestLiquidity = pool.liquidity.usd
+		}
+
+		if (highestApr.lessThan(pool.highestApr)) {
+			highestApr = new Decimal(pool.highestApr)
+			highestAprPoolId = pool.poolId
+		}
+	}
+
+	return {
+		pools: poolsWithData,
+		highestLiquidity: highestLiquidityPoolId,
+		highestAprPool: highestAprPoolId
+	}
 }
