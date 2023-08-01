@@ -1,11 +1,12 @@
 import { Elysia } from "elysia"
-// import cron from "./utils/cron"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { swagger } from "@elysiajs/swagger"
-import { getPoolInfo } from "./query/getPoolInfo"
+import { getPoolList } from "./query/getPoolList"
 import { cors } from "@elysiajs/cors"
+import { getPoolById } from "./query/getPoolById"
+import { getFuzioPrice } from "./query/getFuzioPrice"
 
-const client = await CosmWasmClient.connect("https://sei.kingnodes.com")
+const client = await CosmWasmClient.connect("https://rpc-sei-testnet.rhinostake.com")
 
 const app = new Elysia()
 	.use(
@@ -36,7 +37,9 @@ const app = new Elysia()
                 '---'
 `
 	)
-	.get("/pool-info", async () => await getPoolInfo(client))
+	.get("/poolList", async () => await getPoolList(client))
+	.get("/fuzioPrice", async () => await getFuzioPrice(client))
+	.get("/pool/:id", async ({ params: { id } }) => await getPoolById(client, Number(id)))
 	.use(
 		swagger({
 			documentation: {
@@ -49,26 +52,25 @@ const app = new Elysia()
 			}
 		})
 	)
+	.onError(({ code, error, set }) => {
+		if (code === "NOT_FOUND") {
+			set.status = 404
+
+			return "Route Not Found :("
+		}
+		if (code === "VALIDATION") {
+			return "Validation Error :("
+		}
+		if (code === "INTERNAL_SERVER_ERROR") {
+			return "Internal Server Error :("
+		}
+		if (code === "PARSE") {
+			return "Parsing Error :("
+		}
+		if (code === "UNKNOWN") {
+			return "Unknown Error :("
+		}
+	})
 	.listen(process.env.BUNPORT ?? 3000)
 
-console.log(`🦎 Fuzio Dex Backend started at ${app.server?.hostname}:${app.server?.port}`)
-console.log(`
-                                  _____________
-                           __,---'::.-  -::_ _ '-----.___      ______
-                       _,-'::_  ::-  -  -. _   ::-::_   .'--,'   :: .:'-._
-                    -'_ ::   _  ::_ .:   :: - _ .:   ::- _/ ::   ,-. ::. '-._
-                _,-'   ::-  ::        ::-  _ ::  -  ::     |  .: ((|))      ::'
-        ___,---'   ::    ::    ;::   ::     :.- _ ::._  :: | :    '_____::..--'
-    ,-""  ::  ::.   ,------.  (.  ::  |  ::  ::  ,-- :. _  :'. ::  |       '-._
-   '     ::   '   _._.:_  :.)___,-------------._ :: ____'-._ '._ ::'--...___; ;
- ;:::. ,--'--"""""      /  /                     |. |     ''-----''''---------'
-;  '::;              _ /.:/_,                    _|.:|_,
-|    ;             ='-//||--"                  ='-//||--"
-'   .|               ''  ''                     ''  ''
- |::'|
-  |   |
-   '..:'.
-     '.  '--.____
-       '-:______ '-._
-                '---'
-`)
+console.log(`🦎 Fuzio DEX Microservice started at ${app.server?.hostname}:${app.server?.port}`)

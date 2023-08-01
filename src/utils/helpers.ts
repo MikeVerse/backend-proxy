@@ -1,19 +1,19 @@
-import { Decimal } from "decimal.js"
+import { BigNumber } from "bignumber.js"
 
 export function convertMicroDenomToDenom(
-	value: number | string | Decimal,
+	value: number | string | BigNumber,
 	decimals: number
-): Decimal {
-	if (decimals === 0) return new Decimal(value)
+): BigNumber {
+	if (decimals === 0) return BigNumber(value)
 
-	return new Decimal(Number(value) / Math.pow(10, decimals))
+	return BigNumber(Number(value) / Math.pow(10, decimals))
 }
 
 export function convertDenomToMicroDenom(
-	value: number | string | Decimal,
+	value: number | string | BigNumber,
 	decimals: number
-): Decimal {
-	if (decimals === 0) return new Decimal(value)
+): BigNumber {
+	if (decimals === 0) return BigNumber(value)
 
-	return new Decimal(String(Number(value) * Math.pow(10, decimals)))
+	return BigNumber(String(Number(value) * Math.pow(10, decimals)))
 }

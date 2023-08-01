@@ -1,5 +1,5 @@
 import { Denom } from "@fuzio/contracts/types/FuzioStaking.types"
-import type { Decimal } from "decimal.js"
+import { BigNumber } from "bignumber.js"
 
 export type ServerOptions = {
 	dev?: boolean
@@ -53,13 +53,13 @@ export type BondingPeriodSummary = {
 }
 
 export type LiquidityToken = {
-	amount: Decimal
-	tokenPrice: Decimal
+	amount: BigNumber
+	tokenPrice: BigNumber
 	denom: string
 }
 
 export type Liquidity = {
-	usd: Decimal
+	usd: BigNumber
 	token1: LiquidityToken
 	token2: LiquidityToken
 }
@@ -69,9 +69,9 @@ export type Pool = {
 	bondingPeriods: Array<BondingPeriod>
 	poolId: number
 	swapAddress: string
-	ratio: Decimal
+	ratio: BigNumber
 	lpTokenAddress: string
-	lpTokens: Decimal
+	lpTokens: BigNumber
 	isVerified: boolean
 	liquidity: Liquidity
 }

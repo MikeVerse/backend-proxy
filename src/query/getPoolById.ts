@@ -1,46 +1,39 @@
-import { Decimal } from "decimal.js"
+import { BigNumber } from "bignumber.js"
 import { convertDenomToMicroDenom, convertMicroDenomToDenom } from "../utils/helpers"
 import { BondingPeriod, Pool, Token } from "../types"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
 import { Denom } from "@fuzio/contracts/types/FuzioStaking.types"
+import { getFuzioPrice } from "./getFuzioPrice"
 
-export const getPoolInfo = async (client: CosmWasmClient) => {
-	const poolListResponse = await fetch(
-		"https://raw.githubusercontent.com/Fuzio-DeFi-Network/fuzio-assetlist/main/poolList.json"
-	)
-	const poolListJson: any = await poolListResponse.json()
-	const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
-		return pool
-	})
+export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
+	try {
+		const poolListResponse = await fetch(
+			"https://raw.githubusercontent.com/Fuzio-DeFi-Network/fuzio-assetlist/main/poolList.json"
+		)
+		const poolListJson: any = await poolListResponse.json()
+		const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
+			return pool
+		})
 
-	const tokenListResponse = await fetch(
-		"https://raw.githubusercontent.com/fuzio-defi-network/fuzio-assetlist/main/tokenList.json"
-	)
-	const tokenListJson: any = await tokenListResponse.json()
-	const tokenList = tokenListJson["tokens"].map((token: Token) => {
-		return token
-	})
+		const tokenListResponse = await fetch(
+			"https://raw.githubusercontent.com/fuzio-defi-network/fuzio-assetlist/main/tokenList.json"
+		)
+		const tokenListJson: any = await tokenListResponse.json()
+		const tokenList = tokenListJson["tokens"].map((token: Token) => {
+			return token
+		})
 
-	const {
-		FuzioPool: { FuzioPoolQueryClient },
-		FuzioStaking: { FuzioStakingQueryClient }
-	} = contracts
+		const {
+			FuzioPool: { FuzioPoolQueryClient },
+			FuzioStaking: { FuzioStakingQueryClient }
+		} = contracts
 
-	const poolQueries = poolList.map((pool) => {
-		const poolQueryClient = new FuzioPoolQueryClient(client, pool.swapAddress)
-		return poolQueryClient.info()
-	})
+		const poolQueryClient = new FuzioPoolQueryClient(client, poolList[poolId].swapAddress)
+		const poolInfo = await poolQueryClient.info()
 
-	const poolInfos = await Promise.all(poolQueries)
+		const fuzioPrice = await getFuzioPrice(client)
 
-	const fuzioPrice = new Decimal(poolInfos[1].token2_reserve).dividedBy(
-		new Decimal(poolInfos[1].token1_reserve)
-	)
-
-	const poolsWithData: Array<Pool> = []
-
-	for await (const [index, poolInfo] of poolInfos.entries()) {
 		const token1: Token = tokenList.find((token: Token) => {
 			if (Object.keys(poolInfo.token1_denom)[0] === "cw20") {
 				if (Object.values(poolInfo.token1_denom)[0] === token.contractAddress) {
@@ -65,11 +58,11 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 			}
 		})
 
-		const token2ReserveDenom = new Decimal(poolInfo.token2_reserve).dividedBy(
+		const token2ReserveDenom = BigNumber(poolInfo.token2_reserve).dividedBy(
 			convertDenomToMicroDenom(10, token2.decimal)
 		)
 
-		const token1ReserveDenom = new Decimal(poolInfo.token1_reserve).dividedBy(
+		const token1ReserveDenom = BigNumber(poolInfo.token1_reserve).dividedBy(
 			convertDenomToMicroDenom(10, token1.decimal)
 		)
 
@@ -78,15 +71,13 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 		const token1Price =
 			token1.denom === "factory/sei1nsfrq4m5rnwtq5f0awkzr6u9wpsycctjlgzr9q/ZIO"
 				? fuzioPrice
-				: new Decimal(
-						new Decimal(poolInfo.token1_reserve).dividedBy(
-							new Decimal(poolInfo.token2_reserve)
-						)
+				: BigNumber(
+						BigNumber(poolInfo.token1_reserve).dividedBy(BigNumber(poolInfo.token2_reserve))
 				  ).times(fuzioPrice)
 
 		const token2Price = convertDenomToMicroDenom(
-			new Decimal(
-				new Decimal(poolInfo.token1_reserve).dividedBy(new Decimal(poolInfo.token2_reserve))
+			BigNumber(
+				BigNumber(poolInfo.token1_reserve).dividedBy(BigNumber(poolInfo.token2_reserve))
 			).times(token1Price),
 			decimalDiff
 		)
@@ -99,7 +90,7 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 			highestAprToken: undefined
 		}
 
-		for await (const bondingPeriod of poolList[index].bondingPeriods) {
+		for await (const bondingPeriod of poolList[poolId].bondingPeriods) {
 			const stakingQueryClient = new FuzioStakingQueryClient(client, bondingPeriod.address)
 			const config = await stakingQueryClient.config()
 			const totalStakedBalance = await lpQueryClient.balance({
@@ -156,49 +147,30 @@ export const getPoolInfo = async (client: CosmWasmClient) => {
 			lpTokens: convertMicroDenomToDenom(poolInfo.lp_token_supply, 6),
 			liquidity: {
 				token1: {
-					amount: new Decimal(poolInfo.token1_reserve),
+					amount: BigNumber(poolInfo.token1_reserve),
 					tokenPrice: token1Price,
 					denom: token1.denom
 				},
 				token2: {
-					amount: new Decimal(poolInfo.token2_reserve),
+					amount: BigNumber(poolInfo.token2_reserve),
 					tokenPrice: token2Price,
 					denom: token2.denom
 				},
 				usd: convertMicroDenomToDenom(poolInfo.token1_reserve, 6)
 					.times(token1Price)
-					.add(convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(token2Price))
+					.plus(convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(token2Price))
 			},
 			lpTokenAddress: poolInfo.lp_token_address,
-			swapAddress: poolList[index].swapAddress,
-			isVerified: poolList[index].isVerified,
-			poolId: index + 1,
+			swapAddress: poolList[poolId].swapAddress,
+			isVerified: poolList[poolId].isVerified,
+			poolId,
 			ratio: token2ReserveDenom.dividedBy(token1ReserveDenom),
 			bondingPeriods
 		}
 
-		poolsWithData.push(poolWithData)
-	}
-
-	let highestAprPoolId = 0
-	let highestApr = new Decimal(0)
-	let highestLiquidityPoolId = 0
-	let highestLiquidity = new Decimal(0)
-	for (const pool of poolsWithData) {
-		if (pool.liquidity.usd.greaterThan(highestLiquidity)) {
-			highestLiquidityPoolId = pool.poolId
-			highestLiquidity = pool.liquidity.usd
-		}
-
-		if (highestApr.lessThan(pool.highestApr.highestAprValue)) {
-			highestApr = new Decimal(pool.highestApr.highestAprValue)
-			highestAprPoolId = pool.poolId
-		}
-	}
-
-	return {
-		pools: poolsWithData,
-		highestLiquidity: highestLiquidityPoolId,
-		highestAprPool: highestAprPoolId
+		return poolWithData
+	} catch (error) {
+		console.error("An error occurred:", error)
+		throw error
 	}
 }
