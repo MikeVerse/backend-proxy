@@ -29,7 +29,8 @@
         }
       ],
 	  "node/no-process-env": "off",
-	  "import/extensions": "off"
+	  "import/extensions": "off",
+	  "no-warning-comments": "off"
 	},
 	"parser": "@typescript-eslint/parser",
 	"parserOptions": {

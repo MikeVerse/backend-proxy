@@ -1,13 +1,15 @@
 {
-  "name": "fuzio-dex-backend-v2",
+  "name": "fuzio-dex-backend",
   "version": "1.1.1",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install",
     "dev": "bun run --hot src/index.ts",
-    "prod": "bun run src/index.ts",
+    "serve": "bun run src/index.ts",
     "lint": "eslint src --no-error-on-unmatched-pattern",
-    "lint:fix": "eslint src --fix --no-error-on-unmatched-pattern"
+    "lint:fix": "eslint src --fix --no-error-on-unmatched-pattern",
+    "type-check": "tsc --noEmit",
+    "release": "HUSKY=0 release-it"
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.31.0",
@@ -21,14 +23,76 @@
     "elysia": "^0.6.9"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.7.1",
+    "@commitlint/config-conventional": "^17.7.0",
+    "@release-it/conventional-changelog": "^7.0.0",
     "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.3.0",
     "bun-types": "^0.7.3",
+    "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.47.0",
     "eslint-config-canonical": "^41.1.7",
     "eslint-plugin-canonical": "^4.9.0",
-    "eslint-plugin-import": "npm:eslint-plugin-i@latest",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3",
+    "release-it": "^16.1.4",
     "typescript": "^5.1.6"
   },
-  "module": "src/index.ts"
+  "module": "src/index.ts",
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "release-it": {
+    "github": {
+      "release": true
+    },
+    "npm": {
+      "publish": false
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "infile": "CHANGELOG.md",
+        "preset": {
+          "name": "conventionalcommits",
+          "types": [
+            {
+              "type": "feat",
+              "section": "Features"
+            },
+            {
+              "type": "fix",
+              "section": "Bug Fixes"
+            },
+            {
+              "type": "refactor",
+              "section": "Refactor"
+            },
+            {
+              "type": "perf",
+              "section": "Performance"
+            },
+            {
+              "type": "style",
+              "section": "Visuals"
+            },
+            {
+              "type": "docs",
+              "section": "Docs"
+            },
+            {
+              "type": "chore",
+              "section": "Chore"
+            },
+            {
+              "type": "test",
+              "section": "Tests"
+            }
+          ]
+        }
+      }
+    }
+  }
 }

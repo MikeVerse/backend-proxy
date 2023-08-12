@@ -4,8 +4,8 @@ import {
 	convertDenomToMicroDenom,
 	convertMicroDenomToDenom
 } from "../utils/helpers"
+import { poolListUrl, tokenListUrl } from "../utils/urls"
 import { getFuzioPrice } from "./getFuzioPrice"
-import { poolListUrl, tokenListUrl } from "./urls"
 import { type CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
 import { type Denom } from "@fuzio/contracts/types/FuzioStaking.types"

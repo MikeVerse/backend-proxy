@@ -1,14 +1,13 @@
 import { getFuzioPrice } from "./query/getFuzioPrice"
 import { getPoolById } from "./query/getPoolById"
 import { getPoolList } from "./query/getPoolList"
+import { rpcUrl } from "./utils/urls"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { cors } from "@elysiajs/cors"
 import { swagger } from "@elysiajs/swagger"
 import { Elysia } from "elysia"
 
-const client = await CosmWasmClient.connect(
-	"https://rpc-sei-testnet.rhinostake.com"
-)
+const client = await CosmWasmClient.connect(rpcUrl)
 
 const app = new Elysia()
 	.use(

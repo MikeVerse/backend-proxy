@@ -1,5 +1,5 @@
 import { type Pool } from "../types"
-import { poolListUrl } from "./urls"
+import { poolListUrl } from "../utils/urls"
 import { type CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
 import { BigNumber } from "bignumber.js"
