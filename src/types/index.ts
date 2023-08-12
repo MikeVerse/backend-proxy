@@ -1,5 +1,5 @@
-import { Denom } from "@fuzio/contracts/types/FuzioStaking.types"
-import { BigNumber } from "bignumber.js"
+import { type Denom } from "@fuzio/contracts/types/FuzioStaking.types"
+import { type BigNumber } from "bignumber.js"
 
 export type ServerOptions = {
 	dev?: boolean
@@ -8,30 +8,30 @@ export type ServerOptions = {
 }
 
 export type Token = {
-	isNativeCoin: boolean
-	isIBCCoin: boolean
 	chain: Chain
-	fullName: string
+	contractAddress?: string
 	decimal: number
 	denom: string
-	symbol: string
+	fullName: string
+	isIBCCoin: boolean
+	isNativeCoin: boolean
 	logoURI: string
-	contractAddress?: string
+	symbol: string
 }
 
 export type Chain = {
-	chainName: string
 	chainId: string
+	chainName: string
+	evmChainId?: number
 	gasPrice: {
-		denom: string
 		amount: string
+		denom: string
 	}
-	isEVM: boolean
 	ibcChannels?: {
 		deposit_channel: string
 		withdraw_channel: string
 	}
-	evmChainId?: number
+	isEVM: boolean
 }
 
 export type Reward = {
@@ -41,10 +41,10 @@ export type Reward = {
 
 export type BondingPeriod = {
 	address: string
-	rewards: Array<Reward>
-	lockDuration: number
 	distributionEnd: number
 	distributionStart: number
+	lockDuration: number
+	rewards: Reward[]
 }
 
 export type BondingPeriodSummary = {
@@ -54,24 +54,24 @@ export type BondingPeriodSummary = {
 
 export type LiquidityToken = {
 	amount: BigNumber
-	tokenPrice: BigNumber
 	denom: string
+	tokenPrice: BigNumber
 }
 
 export type Liquidity = {
-	usd: BigNumber
 	token1: LiquidityToken
 	token2: LiquidityToken
+	usd: BigNumber
 }
 
 export type Pool = {
-	highestApr: { highestAprValue: number; highestAprToken: Denom | undefined }
-	bondingPeriods: Array<BondingPeriod>
-	poolId: number
-	swapAddress: string
-	ratio: BigNumber
-	lpTokenAddress: string
-	lpTokens: BigNumber
+	bondingPeriods: BondingPeriod[]
+	highestApr: { highestAprToken: Denom | undefined; highestAprValue: number }
 	isVerified: boolean
 	liquidity: Liquidity
+	lpTokenAddress: string
+	lpTokens: BigNumber
+	poolId: number
+	ratio: BigNumber
+	swapAddress: string
 }

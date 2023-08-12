@@ -1,27 +1,27 @@
-import { BigNumber } from "bignumber.js"
-import { convertDenomToMicroDenom, convertMicroDenomToDenom } from "../utils/helpers"
-import { BondingPeriod, Pool, Token } from "../types"
-import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { contracts } from "@fuzio/contracts"
-import { Denom } from "@fuzio/contracts/types/FuzioStaking.types"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { type BondingPeriod, type Pool, type Token } from "../types"
+import {
+	convertDenomToMicroDenom,
+	convertMicroDenomToDenom
+} from "../utils/helpers"
 import { getFuzioPrice } from "./getFuzioPrice"
 import { poolListUrl, tokenListUrl } from "./urls"
+import { type CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { contracts } from "@fuzio/contracts"
+import { type Denom } from "@fuzio/contracts/types/FuzioStaking.types"
+import { BigNumber } from "bignumber.js"
 
 export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 	try {
-		const poolListResponse = await fetch(
-			poolListUrl
-		)
+		const poolListResponse = await fetch(poolListUrl)
 		const poolListJson: any = await poolListResponse.json()
-		const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
+		const poolList: Pool[] = poolListJson.pools.map((pool: Pool) => {
 			return pool
 		})
 
-		const tokenListResponse = await fetch(
-			tokenListUrl
-		)
+		const tokenListResponse = await fetch(tokenListUrl)
 		const tokenListJson: any = await tokenListResponse.json()
-		const tokenList = tokenListJson["tokens"].map((token: Token) => {
+		const tokenList = tokenListJson.tokens.map((token: Token) => {
 			return token
 		})
 
@@ -30,103 +30,126 @@ export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 			FuzioStaking: { FuzioStakingQueryClient }
 		} = contracts
 
-		const poolQueryClient = new FuzioPoolQueryClient(client, poolList[poolId].swapAddress)
+		const poolQueryClient = new FuzioPoolQueryClient(
+			client,
+			poolList[poolId].swapAddress
+		)
 		const poolInfo = await poolQueryClient.info()
 
 		const fuzioPrice = await getFuzioPrice(client)
 
+		// eslint-disable-next-line consistent-return, array-callback-return
 		const token1: Token = tokenList.find((token: Token) => {
 			if (Object.keys(poolInfo.token1_denom)[0] === "cw20") {
 				if (Object.values(poolInfo.token1_denom)[0] === token.contractAddress) {
 					return token
 				}
-			} else {
-				if (Object.values(poolInfo.token1_denom)[0] === token.denom) {
-					return token
-				}
+			} else if (Object.values(poolInfo.token1_denom)[0] === token.denom) {
+				return token
 			}
 		})
 
+		// eslint-disable-next-line consistent-return, array-callback-return
 		const token2: Token = tokenList.find((token: Token) => {
 			if (Object.keys(poolInfo.token2_denom)[0] === "cw20") {
 				if (Object.values(poolInfo.token2_denom)[0] === token.contractAddress) {
 					return token.decimal
 				}
-			} else {
-				if (Object.values(poolInfo.token2_denom)[0] === token.denom) {
-					return token.decimal
-				}
+			} else if (Object.values(poolInfo.token2_denom)[0] === token.denom) {
+				return token.decimal
 			}
 		})
 
-		const token2ReserveDenom = BigNumber(poolInfo.token2_reserve).dividedBy(
-			convertDenomToMicroDenom(10, token2.decimal)
+		const tokenOneReserveDenom = BigNumber(poolInfo.token1_reserve).dividedBy(
+			convertDenomToMicroDenom(10, token1.decimal)
 		)
 
-		const token1ReserveDenom = BigNumber(poolInfo.token1_reserve).dividedBy(
-			convertDenomToMicroDenom(10, token1.decimal)
+		const tokenTwoReserveDenom = BigNumber(poolInfo.token2_reserve).dividedBy(
+			convertDenomToMicroDenom(10, token2.decimal)
 		)
 
 		const decimalDiff = token2.decimal - token1.decimal
 
-		const token1Price =
+		const tokenOnePrice =
 			token1.denom === "factory/sei1nsfrq4m5rnwtq5f0awkzr6u9wpsycctjlgzr9q/ZIO"
 				? fuzioPrice
 				: BigNumber(
-						BigNumber(poolInfo.token1_reserve).dividedBy(BigNumber(poolInfo.token2_reserve))
+						BigNumber(poolInfo.token1_reserve).dividedBy(
+							BigNumber(poolInfo.token2_reserve)
+						)
 				  ).times(fuzioPrice)
 
-		const token2Price = convertDenomToMicroDenom(
+		const tokenTwoPrice = convertDenomToMicroDenom(
 			BigNumber(
-				BigNumber(poolInfo.token1_reserve).dividedBy(BigNumber(poolInfo.token2_reserve))
-			).times(token1Price),
+				BigNumber(poolInfo.token1_reserve).dividedBy(
+					BigNumber(poolInfo.token2_reserve)
+				)
+			).times(tokenOnePrice),
 			decimalDiff
 		)
 
-		const bondingPeriods: Array<BondingPeriod> = []
-		const lpQueryClient = new FuzioPoolQueryClient(client, poolInfo.lp_token_address)
+		const bondingPeriods: BondingPeriod[] = []
+		const lpQueryClient = new FuzioPoolQueryClient(
+			client,
+			poolInfo.lp_token_address
+		)
 
-		let highestApr: { highestAprValue: number; highestAprToken: Denom | undefined } = {
-			highestAprValue: 0,
-			highestAprToken: undefined
+		let highestApr: {
+			highestAprToken: Denom | undefined
+			highestAprValue: number
+		} = {
+			highestAprToken: undefined,
+			highestAprValue: 0
 		}
 
 		for await (const bondingPeriod of poolList[poolId].bondingPeriods) {
-			const stakingQueryClient = new FuzioStakingQueryClient(client, bondingPeriod.address)
+			const stakingQueryClient = new FuzioStakingQueryClient(
+				client,
+				bondingPeriod.address
+			)
 			const config = await stakingQueryClient.config()
 			const totalStakedBalance = await lpQueryClient.balance({
 				address: bondingPeriod.address
 			})
 
-			let bondingPeriodToReturn: BondingPeriod = {
+			const bondingPeriodToReturn: BondingPeriod = {
 				address: bondingPeriod.address,
+				distributionEnd: 0,
+
 				distributionStart: 0,
-				rewards: [], // { apr: 0, rewardToken: { native: "" } }
+				// { apr: 0, rewardToken: { native: "" } }
 				lockDuration: config.lock_duration,
-				distributionEnd: 0
+				rewards: []
 			}
 
-			highestApr = { highestAprValue: 0, highestAprToken: undefined }
+			highestApr = { highestAprToken: undefined, highestAprValue: 0 }
 
-			for (const [_index, schedule] of config.distribution_schedule.entries()) {
+			for (const [
+				localIndex,
+				schedule
+			] of config.distribution_schedule.entries()) {
 				let totalTokenReward = Number(schedule.amount)
-				totalTokenReward = isNaN(totalTokenReward) ? 0 : totalTokenReward
+				totalTokenReward = Number.isNaN(totalTokenReward) ? 0 : totalTokenReward
 
-				const tokenReserve = poolInfo["token1_reserve"]
+				const tokenReserve = poolInfo.token1_reserve
 
 				const totalLPBalance = Number(poolInfo.lp_token_supply) * 1e6
 
 				const apr = Number(totalStakedBalance.balance)
 					? (100 * totalTokenReward) /
-					  ((2 * Number(tokenReserve) * Number(totalStakedBalance.balance)) / totalLPBalance)
+					  ((2 * Number(tokenReserve) * Number(totalStakedBalance.balance)) /
+							totalLPBalance)
 					: 0
 
 				if (apr > highestApr.highestAprValue) {
 					highestApr.highestAprValue = apr
-					highestApr.highestAprToken = config.reward_token[_index]
+					highestApr.highestAprToken = config.reward_token[localIndex]
 				}
 
-				bondingPeriodToReturn.rewards.push({ apr, rewardToken: config.reward_token[_index] })
+				bondingPeriodToReturn.rewards.push({
+					apr,
+					rewardToken: config.reward_token[localIndex]
+				})
 
 				if (
 					schedule.start_time < bondingPeriodToReturn.distributionStart ||
@@ -144,33 +167,38 @@ export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 		}
 
 		const poolWithData: Pool = {
+			bondingPeriods,
 			highestApr,
-			lpTokens: convertMicroDenomToDenom(poolInfo.lp_token_supply, 6),
+			isVerified: poolList[poolId].isVerified,
 			liquidity: {
 				token1: {
 					amount: BigNumber(poolInfo.token1_reserve),
-					tokenPrice: token1Price,
-					denom: token1.denom
+					denom: token1.denom,
+					tokenPrice: tokenOnePrice
 				},
 				token2: {
 					amount: BigNumber(poolInfo.token2_reserve),
-					tokenPrice: token2Price,
-					denom: token2.denom
+					denom: token2.denom,
+					tokenPrice: tokenTwoPrice
 				},
 				usd: convertMicroDenomToDenom(poolInfo.token1_reserve, 6)
-					.times(token1Price)
-					.plus(convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(token2Price))
+					.times(tokenOnePrice)
+					.plus(
+						convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(
+							tokenTwoPrice
+						)
+					)
 			},
 			lpTokenAddress: poolInfo.lp_token_address,
-			swapAddress: poolList[poolId].swapAddress,
-			isVerified: poolList[poolId].isVerified,
+			lpTokens: convertMicroDenomToDenom(poolInfo.lp_token_supply, 6),
 			poolId,
-			ratio: token2ReserveDenom.dividedBy(token1ReserveDenom),
-			bondingPeriods
+			ratio: tokenTwoReserveDenom.dividedBy(tokenOneReserveDenom),
+			swapAddress: poolList[poolId].swapAddress
 		}
 
 		return poolWithData
 	} catch (error) {
+		// eslint-disable-next-line no-console
 		console.error("An error occurred:", error)
 		throw error
 	}

@@ -1,15 +1,19 @@
-import { Elysia } from "elysia"
-import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { swagger } from "@elysiajs/swagger"
-import { getPoolList } from "./query/getPoolList"
-import { cors } from "@elysiajs/cors"
-import { getPoolById } from "./query/getPoolById"
 import { getFuzioPrice } from "./query/getFuzioPrice"
+import { getPoolById } from "./query/getPoolById"
+import { getPoolList } from "./query/getPoolList"
+import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { cors } from "@elysiajs/cors"
+import { swagger } from "@elysiajs/swagger"
+import { Elysia } from "elysia"
 
-const client = await CosmWasmClient.connect("https://rpc-sei-testnet.rhinostake.com")
+const client = await CosmWasmClient.connect(
+	"https://rpc-sei-testnet.rhinostake.com"
+)
 
 const app = new Elysia()
 	.use(
+		// @ts-expect-error import error, works fine
+		// TODO: Check if error persists in future releases
 		cors({
 			origin: true
 		})
@@ -39,38 +43,52 @@ const app = new Elysia()
 	)
 	.get("/poolList", async () => await getPoolList(client))
 	.get("/fuzioPrice", async () => await getFuzioPrice(client))
-	.get("/pool/:id", async ({ params: { id } }) => await getPoolById(client, Number(id)))
+	.get(
+		"/pool/:id",
+		async ({ params: { id } }) => await getPoolById(client, Number(id))
+	)
 	.use(
 		swagger({
 			documentation: {
 				info: {
-					title: "Fuzio DEX Backend",
-					version: "1.0.0",
+					contact: {
+						name: "Telegram",
+						url: "https://fuzio.network/social/telegram"
+					},
 					description: "API Routes for the Fuzio DEX",
-					contact: { name: "Telegram", url: "https://fuzio.network/social/telegram" }
+					title: "Fuzio DEX Backend",
+					version: "1.0.0"
 				}
 			}
 		})
 	)
-	.onError(({ code, error, set }) => {
+	.onError(({ code, set }) => {
 		if (code === "NOT_FOUND") {
 			set.status = 404
-
 			return "Route Not Found :("
 		}
+
 		if (code === "VALIDATION") {
 			return "Validation Error :("
 		}
+
 		if (code === "INTERNAL_SERVER_ERROR") {
 			return "Internal Server Error :("
 		}
+
 		if (code === "PARSE") {
 			return "Parsing Error :("
 		}
+
 		if (code === "UNKNOWN") {
+			return "Unknown Error :("
+		} else {
 			return "Unknown Error :("
 		}
 	})
-	.listen(process.env.BUNPORT ?? 3000)
+	.listen(process.env.BUNPORT ?? 3_000)
 
-console.log(`🦎 Fuzio DEX Microservice started at ${app.server?.hostname}:${app.server?.port}`)
+// eslint-disable-next-line no-console
+console.log(
+	`🦎 Fuzio DEX Microservice started at ${app.server?.hostname}:${app.server?.port}`
+)
