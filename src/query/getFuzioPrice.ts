@@ -7,9 +7,7 @@ import { poolListUrl } from "./urls"
 
 export const getFuzioPrice = async (client: CosmWasmClient) => {
 	try {
-		const poolListResponse = await fetch(
-			poolListUrl
-		)
+		const poolListResponse = await fetch(poolListUrl)
 		const poolListJson: any = await poolListResponse.json()
 		const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
 			return pool
@@ -18,6 +16,12 @@ export const getFuzioPrice = async (client: CosmWasmClient) => {
 		const {
 			FuzioPool: { FuzioPoolQueryClient }
 		} = contracts
+
+		console.log(poolList)
+
+		if (poolList.length === 0) {
+			return BigNumber(0)
+		}
 
 		const poolQueryClient = new FuzioPoolQueryClient(client, poolList[1].swapAddress)
 		const poolInfo = await poolQueryClient.info()

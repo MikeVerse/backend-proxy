@@ -9,17 +9,13 @@ import { poolListUrl, tokenListUrl } from "./urls"
 
 export const getPoolList = async (client: CosmWasmClient) => {
 	try {
-		const poolListResponse = await fetch(
-			poolListUrl
-		)
+		const poolListResponse = await fetch(poolListUrl)
 		const poolListJson: any = await poolListResponse.json()
 		const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
 			return pool
 		})
 
-		const tokenListResponse = await fetch(
-			tokenListUrl
-		)
+		const tokenListResponse = await fetch(tokenListUrl)
 		const tokenListJson: any = await tokenListResponse.json()
 		const tokenList = tokenListJson["tokens"].map((token: Token) => {
 			return token
@@ -40,6 +36,14 @@ export const getPoolList = async (client: CosmWasmClient) => {
 		const fuzioPrice = await getFuzioPrice(client)
 
 		const poolsWithData: Array<Pool> = []
+
+		if (poolList.length === 0) {
+			return {
+				pools: poolsWithData,
+				highestLiquidity: 0,
+				highestAprPool: 0
+			}
+		}
 
 		for await (const [index, poolInfo] of poolInfos.entries()) {
 			const token1: Token = tokenList.find((token: Token) => {

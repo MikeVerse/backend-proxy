@@ -5,8 +5,8 @@ export function convertMicroDenomToDenom(
 	decimals: number
 ): BigNumber {
 	if (decimals === 0) return BigNumber(value)
-
-	return BigNumber(Number(value) / Math.pow(10, decimals))
+	const bnValue = BigNumber(value)
+	return bnValue.dividedBy(BigNumber(10).pow(decimals))
 }
 
 export function convertDenomToMicroDenom(
@@ -14,6 +14,6 @@ export function convertDenomToMicroDenom(
 	decimals: number
 ): BigNumber {
 	if (decimals === 0) return BigNumber(value)
-
-	return BigNumber(String(Number(value) * Math.pow(10, decimals)))
+	const bnValue = BigNumber(value)
+	return bnValue.multipliedBy(BigNumber(10).pow(decimals))
 }
