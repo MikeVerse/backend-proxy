@@ -3,11 +3,12 @@ import { convertDenomToMicroDenom, convertMicroDenomToDenom } from "../utils/hel
 import { Pool, Token } from "../types"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
+import { poolListUrl } from "./urls"
 
 export const getFuzioPrice = async (client: CosmWasmClient) => {
 	try {
 		const poolListResponse = await fetch(
-			"https://raw.githubusercontent.com/Fuzio-DeFi-Network/fuzio-assetlist/main/poolList.json"
+			poolListUrl
 		)
 		const poolListJson: any = await poolListResponse.json()
 		const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
