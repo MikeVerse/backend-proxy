@@ -5,11 +5,12 @@ import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
 import { Denom } from "@fuzio/contracts/types/FuzioStaking.types"
 import { getFuzioPrice } from "./getFuzioPrice"
+import { poolListUrl, tokenListUrl } from "./urls"
 
 export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 	try {
 		const poolListResponse = await fetch(
-			"https://raw.githubusercontent.com/Fuzio-DeFi-Network/fuzio-assetlist/main/poolList.json"
+			poolListUrl
 		)
 		const poolListJson: any = await poolListResponse.json()
 		const poolList: Array<Pool> = poolListJson["pools"].map((pool: Pool) => {
@@ -17,7 +18,7 @@ export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 		})
 
 		const tokenListResponse = await fetch(
-			"https://raw.githubusercontent.com/fuzio-defi-network/fuzio-assetlist/main/tokenList.json"
+			tokenListUrl
 		)
 		const tokenListJson: any = await tokenListResponse.json()
 		const tokenList = tokenListJson["tokens"].map((token: Token) => {
