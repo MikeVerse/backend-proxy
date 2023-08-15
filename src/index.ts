@@ -1,22 +1,17 @@
 import { getFuzioPrice } from "./query/getFuzioPrice"
 import { getPoolById } from "./query/getPoolById"
 import { getPoolList } from "./query/getPoolList"
-import { rpcUrl } from "./utils/urls"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { cors } from "@elysiajs/cors"
 import { swagger } from "@elysiajs/swagger"
 import { Elysia } from "elysia"
 
-const client = await CosmWasmClient.connect(rpcUrl)
+const client = await CosmWasmClient.connect({headers: {
+         "x-apikey": process.env.SEIAPISKEY ?? '',
+        },
+        url: process.env.SEI_NETWORK === 'MAINNET' ? "https://rpc.sei-apis.com" : "https://rpc.testnet.sei-apis.com"})
 
 const app = new Elysia()
-	.use(
-		// @ts-expect-error import error, works fine
-		// TODO: Check if error persists in future releases
-		cors({
-			origin: true
-		})
-	)
 	.get(
 		"/",
 		() => `
