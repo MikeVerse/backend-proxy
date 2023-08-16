@@ -1,4 +1,5 @@
 import { type Pool } from "../types"
+import { stablePoolId } from "../utils/helpers"
 import { poolListUrl } from "../utils/urls"
 import { type CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { contracts } from "@fuzio/contracts"
@@ -23,7 +24,7 @@ export const getFuzioPrice = async (client: CosmWasmClient) => {
 
 		const poolQueryClient = new FuzioPoolQueryClient(
 			client,
-			poolList[1].swapAddress
+			poolList[stablePoolId].swapAddress
 		)
 		const poolInfo = await poolQueryClient.info()
 

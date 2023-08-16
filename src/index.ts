@@ -2,14 +2,18 @@ import { getFuzioPrice } from "./query/getFuzioPrice"
 import { getPoolById } from "./query/getPoolById"
 import { getPoolList } from "./query/getPoolList"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { cors } from "@elysiajs/cors"
 import { swagger } from "@elysiajs/swagger"
 import { Elysia } from "elysia"
 
-const client = await CosmWasmClient.connect({headers: {
-         "x-apikey": process.env.SEIAPISKEY ?? '',
-        },
-        url: process.env.SEI_NETWORK === 'MAINNET' ? "https://rpc.sei-apis.com" : "https://rpc.testnet.sei-apis.com"})
+const client = await CosmWasmClient.connect({
+	headers: {
+		"x-apikey": process.env.SEIAPISKEY ?? ""
+	},
+	url:
+		process.env.SEI_NETWORK === "MAINNET"
+			? "https://rpc.sei-apis.com"
+			: "https://rpc-testnet.sei-apis.com"
+})
 
 const app = new Elysia()
 	.get(
