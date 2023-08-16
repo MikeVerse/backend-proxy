@@ -115,7 +115,7 @@ export const getPoolList = async (client: CosmWasmClient) => {
 				poolInfo.lp_token_address
 			)
 
-			let temporaryHighestApr: {
+			const temporaryHighestApr: {
 				highestAprToken: Denom | undefined
 				highestAprValue: number
 			} = {
@@ -142,8 +142,6 @@ export const getPoolList = async (client: CosmWasmClient) => {
 					lockDuration: config.lock_duration,
 					rewards: []
 				}
-
-				temporaryHighestApr = { highestAprToken: undefined, highestAprValue: 0 }
 
 				for (const [
 					localIndex,
