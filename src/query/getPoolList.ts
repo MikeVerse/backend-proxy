@@ -12,6 +12,12 @@ import { type Denom } from "@fuzio/contracts/types/FuzioStaking.types"
 import { BigNumber } from "bignumber.js"
 
 export const getPoolList = async (client: CosmWasmClient) => {
+	BigNumber.config({
+		DECIMAL_PLACES: 18,
+		EXPONENTIAL_AT: 18,
+		ROUNDING_MODE: 1
+	})
+
 	try {
 		const poolListResponse = await fetch(poolListUrl)
 		const poolListJson: any = await poolListResponse.json()
@@ -203,13 +209,15 @@ export const getPoolList = async (client: CosmWasmClient) => {
 						denom: token2.denom,
 						tokenPrice: tokenTwoPrice
 					},
-					usd: convertMicroDenomToDenom(poolInfo.token1_reserve, 6)
-						.times(tokenOnePrice)
-						.plus(
-							convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(
-								tokenTwoPrice
-							)
+					usd: convertMicroDenomToDenom(
+						tokenOnePrice.multipliedBy(poolInfo.token1_reserve),
+						token1.decimal
+					).plus(
+						convertMicroDenomToDenom(
+							tokenTwoPrice.multipliedBy(poolInfo.token2_reserve),
+							token2.decimal
 						)
+					)
 				},
 				lpTokenAddress: poolInfo.lp_token_address,
 				lpTokens: convertMicroDenomToDenom(poolInfo.lp_token_supply, 6),

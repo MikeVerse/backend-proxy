@@ -181,13 +181,15 @@ export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 					denom: token2.denom,
 					tokenPrice: tokenTwoPrice
 				},
-				usd: convertMicroDenomToDenom(poolInfo.token1_reserve, 6)
-					.times(tokenOnePrice)
-					.plus(
-						convertMicroDenomToDenom(poolInfo.token2_reserve, 6).times(
-							tokenTwoPrice
-						)
+				usd: convertMicroDenomToDenom(
+					tokenOnePrice.multipliedBy(poolInfo.token1_reserve),
+					token1.decimal
+				).plus(
+					convertMicroDenomToDenom(
+						tokenTwoPrice.multipliedBy(poolInfo.token2_reserve),
+						token2.decimal
 					)
+				)
 			},
 			lpTokenAddress: poolInfo.lp_token_address,
 			lpTokens: convertMicroDenomToDenom(poolInfo.lp_token_supply, 6),
