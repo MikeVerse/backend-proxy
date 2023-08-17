@@ -128,26 +128,30 @@ export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 				localIndex,
 				schedule
 			] of config.distribution_schedule.entries()) {
-				let totalTokenReward = Number(schedule.amount)
-				totalTokenReward = Number.isNaN(totalTokenReward) ? 0 : totalTokenReward
+				const totalTokenReward = BigNumber(schedule.amount)
 
-				const tokenReserve = poolInfo.token1_reserve
+				const tokenReserve = BigNumber(poolInfo.token1_reserve)
+				const totalLPBalance = BigNumber(poolInfo.lp_token_supply)
+				const totalStakeBalance = BigNumber(totalStakedBalance.balance)
 
-				const totalLPBalance = Number(poolInfo.lp_token_supply) * 1e6
+				const value1 = totalTokenReward.multipliedBy(100)
+				const value2 = BigNumber(
+					2 * tokenReserve.toNumber() * totalStakeBalance.toNumber()
+				)
+				const value3 = value2.dividedBy(totalLPBalance)
+				const value4 = value1.dividedBy(value3)
 
-				const apr = Number(totalStakedBalance.balance)
-					? (100 * totalTokenReward) /
-					  ((2 * Number(tokenReserve) * Number(totalStakedBalance.balance)) /
-							totalLPBalance)
-					: 0
+				const apr = totalStakeBalance.gt(0)
+					? value4.decimalPlaces(2, 1)
+					: BigNumber(0)
 
-				if (apr > highestApr.highestAprValue) {
-					highestApr.highestAprValue = apr
+				if (apr.gt(highestApr.highestAprValue)) {
+					highestApr.highestAprValue = apr.toNumber()
 					highestApr.highestAprToken = config.reward_token[localIndex]
 				}
 
 				bondingPeriodToReturn.rewards.push({
-					apr,
+					apr: apr.toNumber(),
 					rewardToken: config.reward_token[localIndex]
 				})
 
