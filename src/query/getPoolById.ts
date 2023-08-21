@@ -70,8 +70,13 @@ export const getPoolById = async (client: CosmWasmClient, poolId: number) => {
 
 		const decimalDiff = token2.decimal - token1.decimal
 
+		const baseToken =
+			process.env.SEI_NETWORK === "MAINNET"
+				? "usei"
+				: "factory/sei1nsfrq4m5rnwtq5f0awkzr6u9wpsycctjlgzr9q/ZIO"
+
 		const tokenOnePrice =
-			token1.denom === "factory/sei1nsfrq4m5rnwtq5f0awkzr6u9wpsycctjlgzr9q/ZIO"
+			token1.denom === baseToken
 				? fuzioPrice
 				: BigNumber(
 						BigNumber(poolInfo.token1_reserve).dividedBy(
