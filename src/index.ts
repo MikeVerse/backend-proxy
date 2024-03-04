@@ -11,8 +11,8 @@ const client = await CosmWasmClient.connect({
 	},
 	url:
 		process.env.SEI_NETWORK === "MAINNET"
-			? "https://rpc.sei-apis.com"
-			: "https://rpc-testnet.sei-apis.com"
+			? "https://neutron-testnet-rpc.polkachu.com"
+			: "https://neutron-testnet-rpc.polkachu.com"
 })
 
 const app = new Elysia()
